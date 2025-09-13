@@ -1,0 +1,18 @@
+{
+  "name": "daily-global-news",
+  "version": "1.0.0",
+  "description": "Daily global news summarizer for Notion",
+  "main": "src/collect-news.js",
+  "scripts": {
+    "start": "node src/collect-news.js",
+    "test": "node src/collect-news.js"
+  },
+  "dependencies": {
+    "@notionhq/client": "^2.2.15",
+    "axios": "^1.6.0",
+    "@anthropic-ai/sdk": "^0.20.0"
+  },
+  "keywords": ["news", "notion", "automation"],
+  "author": "",
+  "license": "MIT"
+}

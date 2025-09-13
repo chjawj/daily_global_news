@@ -1,0 +1,31 @@
+name: Daily Global News Summary
+
+on:
+  schedule:
+    # 매일 UTC 23:00 (한국시간 08:00)에 실행
+    - cron: '0 23 * * *'
+  workflow_dispatch: # 수동 실행도 가능
+
+jobs:
+  collect-news:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Run news collector
+      env:
+        NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+        NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        BRAVE_API_KEY: ${{ secrets.BRAVE_API_KEY }}
+      run: node src/collect-news.js
