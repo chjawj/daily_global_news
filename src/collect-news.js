@@ -13,8 +13,10 @@ async function searchNews(query, limit = 10) {
         'X-Subscription-Token': process.env.BRAVE_API_KEY
       },
       params: {
-        q: `${query} site:reuters.com OR site:bbc.com OR site:cnn.com OR site:techcrunch.com OR site:theverge.com`,
-        count: limit,
+        q: `${query} Semiconductor industry news or AI algorithm-related industry trends or startup investment news`,
+        count: 10,
+        country: 'us',
+        search_lang: 'en',
         freshness: 'pd' // past day
       }
     });
