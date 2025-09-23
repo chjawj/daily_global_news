@@ -6,67 +6,81 @@ const Anthropic = require('@anthropic-ai/sdk');
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-async function searchGlobalNews(limit = 10) {
+async function searchSemiconductorNews(limit = 8) {
   try {
     const response = await axios.get('https://newsdata.io/api/1/latest', {
       params: {
         apikey: process.env.NEWSDATA_API_KEY,
-        category: 'world,politics',
+        q: 'semiconductor OR chip OR "chip manufacturing" OR TSMC OR "Samsung Electronics" OR "Intel" OR foundry OR "EUV lithography" OR "memory chip" OR "chip shortage" OR "wafer fabrication" OR "semiconductor equipment" OR ASML OR "Applied Materials" OR "chip design" OR fabless OR IDM OR "supply chain" OR "chip investment" OR "semiconductor M&A"',
         language: 'en',
         size: limit
       }
     });
     
-    console.log(`📰 글로벌 뉴스 ${response.data.results?.length || 0}개 수집`);
+    console.log(`🔬 반도체 뉴스 ${response.data.results?.length || 0}개 수집`);
     return response.data.results || [];
   } catch (error) {
-    console.error('글로벌 뉴스 검색 오류:', error.response?.status, error.response?.statusText);
+    console.error('반도체 뉴스 검색 오류:', error.response?.status, error.response?.statusText);
     console.error('에러 상세:', error.response?.data);
     return [];
   }
 }
 
-async function searchTechNews(limit = 10) {
+async function searchAINews(limit = 8) {
   try {
     const response = await axios.get('https://newsdata.io/api/1/latest', {
       params: {
         apikey: process.env.NEWSDATA_API_KEY,
-        q: 'technology OR AI OR "artificial intelligence" OR startup OR blockchain',
+        q: '"artificial intelligence" OR "machine learning" OR "deep learning" OR "neural network" OR "large language model" OR LLM OR GPT OR "computer vision" OR "natural language processing" OR NLP OR "AI research" OR "AI breakthrough" OR "open source AI" OR "AI model" OR transformer OR "AI startup" OR "AI investment" OR "generative AI" OR diffusion OR "AI application" OR "AI deployment"',
         language: 'en',
         size: limit
       }
     });
     
-    console.log(`💻 기술 뉴스 ${response.data.results?.length || 0}개 수집`);
+    console.log(`🤖 AI/알고리즘 뉴스 ${response.data.results?.length || 0}개 수집`);
     return response.data.results || [];
   } catch (error) {
-    console.error('기술 뉴스 검색 오류:', error.response?.status, error.response?.statusText);
+    console.error('AI 뉴스 검색 오류:', error.response?.status, error.response?.statusText);
     console.error('에러 상세:', error.response?.data);
     return [];
   }
 }
 
-async function searchBusinessNews(limit = 10) {
+async function searchStartupInvestmentNews(limit = 8) {
   try {
     const response = await axios.get('https://newsdata.io/api/1/latest', {
       params: {
         apikey: process.env.NEWSDATA_API_KEY,
-        category: 'business',
+        q: 'startup OR "venture capital" OR "Series A" OR "Series B" OR "Series C" OR IPO OR "initial public offering" OR "funding round" OR "investment" OR unicorn OR "valuation" OR M&A OR "merger" OR acquisition OR "private equity" OR "growth capital" OR "seed funding" OR "angel investment" OR "venture funding" OR "startup ecosystem" OR "tech investment" OR "fintech startup" OR "SaaS startup"',
         language: 'en',
         size: limit
       }
     });
     
-    console.log(`💼 비즈니스 뉴스 ${response.data.results?.length || 0}개 수집`);
+    console.log(`💰 스타트업/투자 뉴스 ${response.data.results?.length || 0}개 수집`);
     return response.data.results || [];
   } catch (error) {
-    console.error('비즈니스 뉴스 검색 오류:', error.response?.status, error.response?.statusText);
+    console.error('스타트업 뉴스 검색 오류:', error.response?.status, error.response?.statusText);
     return [];
   }
 }
 
 async function summarizeWithClaude(newsData) {
-  const prompt = `다음 뉴스들을 분석해서 가장 중요한 글로벌 뉴스와 기술 트렌드 5개를 선별하고 요약해주세요.
+  const prompt = `다음 뉴스들을 분석해서 아래 3개 카테고리에서 총 5개의 뉴스를 선별하고 요약해주세요.
+
+**선별 기준:**
+1. **반도체 산업 뉴스** (1-3개 선택)
+   - 설계/제조/장비/소재 관련 주요 기사
+   - 기업 인수합병, 투자 동향, 공급망 이슈 포함
+   - 어제 제공한 기사/이슈와 중복되지 않는 새로운 내용 우선
+
+2. **AI 알고리즘/산업 동향** (1-3개 선택)  
+   - 최신 연구 발표, 오픈소스 릴리즈, 산업 적용 사례
+   - 매일 다른 연구/기업/적용 사례를 우선적으로 제공
+
+3. **스타트업/투자 관련** (1-3개 선택)
+   - 글로벌 스타트업 투자 동향, M&A, IPO 관련 기사  
+   - 동일한 회사/사건 반복은 피하고 새로운 투자 흐름을 강조
 
 뉴스 데이터:
 ${newsData.map(item => `제목: ${item.title}
@@ -80,20 +94,30 @@ URL: ${item.link}
 다음 형식으로 답변해주세요:
 ## 📰 오늘의 주요 뉴스 & 기술 트렌드 (${new Date().toLocaleDateString('ko-KR')})
 
-### 1. [뉴스 제목]
+### 🔬 반도체 산업
+#### [뉴스 제목]
 - **핵심 내용**: [1-2줄 요약]
-- **영향**: [why it matters]
+- **영향**: [산업/시장에 미치는 영향]
 - **출처**: [출처명] - [URL]
 
-### 2. [뉴스 제목]
-...
+### 🤖 AI/알고리즘 동향  
+#### [뉴스 제목]
+- **핵심 내용**: [1-2줄 요약]
+- **기술적 의미**: [기술 발전/적용 관점에서의 의미]
+- **출처**: [출처명] - [URL]
 
-정확히 5개만 선별해주세요. 글로벌 영향력이 큰 뉴스와 최신 기술 트렌드를 우선적으로 선택해주세요.`;
+### 💰 스타트업/투자
+#### [뉴스 제목]  
+- **핵심 내용**: [1-2줄 요약]
+- **투자 시사점**: [투자 트렌드/시장 변화 관점]
+- **출처**: [출처명] - [URL]
+
+정확히 5개만 선별하되, 각 카테고리에서 1-3개씩 균형있게 선택해주세요. 새로운 내용과 다양성을 우선시해주세요.`;
 
   try {
     const response = await anthropic.messages.create({
       model: 'claude-3-sonnet-20240229',
-      max_tokens: 2000,
+      max_tokens: 2500,
       messages: [{ role: 'user', content: prompt }]
     });
     
@@ -159,17 +183,17 @@ async function addToNotion(content) {
 async function main() {
   console.log('🚀 일일 뉴스 수집을 시작합니다...');
   
-  // 1. newsdata.io API로 뉴스 검색
-  console.log('📰 글로벌 뉴스 검색 중...');
-  const globalNews = await searchGlobalNews(8);
+  // 1. 전문 카테고리별 뉴스 검색
+  console.log('🔬 반도체 산업 뉴스 검색 중...');
+  const semiconductorNews = await searchSemiconductorNews(8);
   
-  console.log('💻 기술 뉴스 검색 중...');
-  const techNews = await searchTechNews(8);
+  console.log('🤖 AI/알고리즘 동향 뉴스 검색 중...');
+  const aiNews = await searchAINews(8);
   
-  console.log('💼 비즈니스 뉴스 검색 중...');
-  const businessNews = await searchBusinessNews(4);
+  console.log('💰 스타트업/투자 뉴스 검색 중...');
+  const startupNews = await searchStartupInvestmentNews(8);
   
-  const allNews = [...globalNews, ...techNews, ...businessNews];
+  const allNews = [...semiconductorNews, ...aiNews, ...startupNews];
   console.log(`📊 총 ${allNews.length}개의 뉴스를 수집했습니다.`);
   
   if (allNews.length === 0) {
@@ -177,8 +201,8 @@ async function main() {
     return;
   }
   
-  // 2. Claude로 요약
-  console.log('🤖 Claude가 뉴스를 분석하고 요약 중...');
+  // 2. Claude로 전문 카테고리별 요약
+  console.log('🤖 Claude가 전문 뉴스를 분석하고 요약 중...');
   const summary = await summarizeWithClaude(allNews);
   
   // 3. Notion에 추가
