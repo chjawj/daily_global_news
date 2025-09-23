@@ -11,7 +11,7 @@ async function searchSemiconductorNews(limit = 8) {
     const response = await axios.get('https://newsdata.io/api/1/latest', {
       params: {
         apikey: process.env.NEWSDATA_API_KEY,
-        q: 'semiconductor OR chip OR "chip manufacturing" OR TSMC OR "Samsung Electronics" OR "Intel" OR foundry OR "EUV lithography" OR "memory chip" OR "chip shortage" OR "wafer fabrication" OR "semiconductor equipment" OR ASML OR "Applied Materials" OR "chip design" OR fabless OR IDM OR "supply chain" OR "chip investment" OR "semiconductor M&A"',
+        q: 'semiconductor OR chip OR TSMC OR Intel OR "chip shortage"',
         language: 'en',
         size: limit
       }
@@ -31,7 +31,7 @@ async function searchAINews(limit = 8) {
     const response = await axios.get('https://newsdata.io/api/1/latest', {
       params: {
         apikey: process.env.NEWSDATA_API_KEY,
-        q: '"artificial intelligence" OR "machine learning" OR "deep learning" OR "neural network" OR "large language model" OR LLM OR GPT OR "computer vision" OR "natural language processing" OR NLP OR "AI research" OR "AI breakthrough" OR "open source AI" OR "AI model" OR transformer OR "AI startup" OR "AI investment" OR "generative AI" OR diffusion OR "AI application" OR "AI deployment"',
+        q: '"artificial intelligence" OR "machine learning" OR GPT OR "AI research"',
         language: 'en',
         size: limit
       }
@@ -51,7 +51,7 @@ async function searchStartupInvestmentNews(limit = 8) {
     const response = await axios.get('https://newsdata.io/api/1/latest', {
       params: {
         apikey: process.env.NEWSDATA_API_KEY,
-        q: 'startup OR "venture capital" OR "Series A" OR "Series B" OR "Series C" OR IPO OR "initial public offering" OR "funding round" OR "investment" OR unicorn OR "valuation" OR M&A OR "merger" OR acquisition OR "private equity" OR "growth capital" OR "seed funding" OR "angel investment" OR "venture funding" OR "startup ecosystem" OR "tech investment" OR "fintech startup" OR "SaaS startup"',
+        q: 'startup OR "venture capital" OR IPO OR "Series A" OR funding',
         language: 'en',
         size: limit
       }
