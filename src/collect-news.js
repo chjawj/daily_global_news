@@ -72,7 +72,7 @@ async function summarizeWithClaude(newsData) {
     description: (item.description || '').substring(0, 100)
   }));
 
-  const prompt = `뉴스 분석 후 3개 카테고리에서 총 5개 선별하여 간결하게 요약:
+  const prompt = `뉴스 분석 후 3개 카테고리에서 어제 제공한 기사와 중복되지 않는 내용으로 총 5개 선별하여 간결하게 요약:
 
 데이터:
 ${trimmedNews.map(item => `제목: ${item.title}
@@ -82,22 +82,22 @@ URL: ${item.link}`).join('\n---\n')}
 출력 형식:
 ## 📰 오늘의 뉴스 브리핑 (${new Date().toLocaleDateString('ko-KR')})
 
-반도체 산업
+반도체 산업 (설계/제조/장비/소재 관련 주요 기사 1-2개 선택)
 [제목]
 - 내용: [1줄 요약]
 - 출처: [URL]
 
-AI/알고리즘
+AI/알고리즘 (최신 연구 발표, 오픈소스 릴리즈, 산업 적용 기사 1-2개 선택)
 [제목] 
 - 내용: [1줄 요약]
 - 출처: [URL]
 
-투자/스타트업
+투자/스타트업 (글로벌 스타트업 투자 동향, M&A, IPO 관련 기사 1-2개 선택)
 [제목]
 - 내용: [1줄 요약] 
 - 출처: [URL]
 
-총 5개 선별 (각 카테고리 1-2개). 간결하게 작성.`;
+총 5개 선별. 간결하게 작성.`;
 
   try {
     const response = await anthropic.messages.create({
