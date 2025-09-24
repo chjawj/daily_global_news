@@ -6,7 +6,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-async function searchSemiconductorNews(limit = 8) {
+async function searchSemiconductorNews(limit = 4) { // 8 → 4로 줄임
   try {
     const response = await axios.get('https://newsdata.io/api/1/latest', {
       params: {
@@ -26,7 +26,7 @@ async function searchSemiconductorNews(limit = 8) {
   }
 }
 
-async function searchAINews(limit = 8) {
+async function searchAINews(limit = 4) { // 8 → 4로 줄임
   try {
     const response = await axios.get('https://newsdata.io/api/1/latest', {
       params: {
@@ -46,7 +46,7 @@ async function searchAINews(limit = 8) {
   }
 }
 
-async function searchStartupInvestmentNews(limit = 8) {
+async function searchStartupInvestmentNews(limit = 4) { // 8 → 4로 줄임
   try {
     const response = await axios.get('https://newsdata.io/api/1/latest', {
       params: {
@@ -66,58 +66,43 @@ async function searchStartupInvestmentNews(limit = 8) {
 }
 
 async function summarizeWithClaude(newsData) {
-  const prompt = `다음 뉴스들을 분석해서 아래 3개 카테고리에서 총 5개의 뉴스를 선별하고 요약해주세요.
+  // 토큰 절약을 위해 뉴스 설명을 100자로 제한
+  const trimmedNews = newsData.map(item => ({
+    ...item,
+    description: (item.description || '').substring(0, 100)
+  }));
 
-**선별 기준:**
-1. **반도체 산업 뉴스** (1-3개 선택)
-   - 설계/제조/장비/소재 관련 주요 기사
-   - 기업 인수합병, 투자 동향, 공급망 이슈 포함
-   - 어제 제공한 기사/이슈와 중복되지 않는 새로운 내용 우선
+  const prompt = `뉴스 분석 후 3개 카테고리에서 총 5개 선별하여 간결하게 요약:
 
-2. **AI 알고리즘/산업 동향** (1-3개 선택)  
-   - 최신 연구 발표, 오픈소스 릴리즈, 산업 적용 사례
-   - 매일 다른 연구/기업/적용 사례를 우선적으로 제공
-
-3. **스타트업/투자 관련** (1-3개 선택)
-   - 글로벌 스타트업 투자 동향, M&A, IPO 관련 기사  
-   - 동일한 회사/사건 반복은 피하고 새로운 투자 흐름을 강조
-
-뉴스 데이터:
-${newsData.map(item => `제목: ${item.title}
+데이터:
+${trimmedNews.map(item => `제목: ${item.title}
 설명: ${item.description || ''}
-URL: ${item.link}
-발행시간: ${item.pubDate}
-출처: ${item.source_id || 'Unknown'}
-카테고리: ${item.category?.join(', ') || 'General'}
-`).join('\n---\n')}
+URL: ${item.link}`).join('\n---\n')}
 
-다음 형식으로 답변해주세요:
-## 📰 오늘의 주요 뉴스 & 기술 트렌드 (${new Date().toLocaleDateString('ko-KR')})
+출력 형식:
+## 📰 오늘의 뉴스 브리핑 (${new Date().toLocaleDateString('ko-KR')})
 
-### 🔬 반도체 산업
-#### [뉴스 제목]
-- **핵심 내용**: [1-2줄 요약]
-- **영향**: [산업/시장에 미치는 영향]
-- **출처**: [출처명] - [URL]
+반도체 산업
+[제목]
+- 내용: [1줄 요약]
+- 출처: [URL]
 
-### 🤖 AI/알고리즘 동향  
-#### [뉴스 제목]
-- **핵심 내용**: [1-2줄 요약]
-- **기술적 의미**: [기술 발전/적용 관점에서의 의미]
-- **출처**: [출처명] - [URL]
+AI/알고리즘
+[제목] 
+- 내용: [1줄 요약]
+- 출처: [URL]
 
-### 💰 스타트업/투자
-#### [뉴스 제목]  
-- **핵심 내용**: [1-2줄 요약]
-- **투자 시사점**: [투자 트렌드/시장 변화 관점]
-- **출처**: [출처명] - [URL]
+투자/스타트업
+[제목]
+- 내용: [1줄 요약] 
+- 출처: [URL]
 
-정확히 5개만 선별하되, 각 카테고리에서 1-3개씩 균형있게 선택해주세요. 새로운 내용과 다양성을 우선시해주세요.`;
+총 5개 선별 (각 카테고리 1-2개). 간결하게 작성.`;
 
   try {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 2500,
+      max_tokens: 1500, // 2500 → 1500으로 줄임
       messages: [{ role: 'user', content: prompt }]
     });
     
@@ -130,9 +115,42 @@ URL: ${item.link}
 
 async function addToNotion(content) {
   try {
-    const pageId = process.env.NOTION_PAGE_ID;
+    const parentPageId = process.env.NOTION_PAGE_ID;
     
-    // Markdown을 Notion 블록으로 변환하는 간단한 파서
+    // 오늘 날짜로 서브페이지 제목 생성
+    const today = new Date();
+    const koreaDate = new Date(today.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+    const dateStr = koreaDate.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit',
+      weekday: 'short'
+    });
+    const pageTitle = `📰 ${dateStr} 뉴스 브리핑`;
+    
+    console.log(`📄 새 페이지 생성 중: ${pageTitle}`);
+    
+    // 1. 새로운 서브페이지 생성
+    const newPage = await notion.pages.create({
+      parent: {
+        page_id: parentPageId
+      },
+      properties: {
+        title: {
+          title: [
+            {
+              text: {
+                content: pageTitle
+              }
+            }
+          ]
+        }
+      }
+    });
+    
+    console.log(`✅ 새 페이지 생성됨: ${newPage.id}`);
+    
+    // 2. Markdown을 Notion 블록으로 변환
     const blocks = content.split('\n').filter(line => line.trim()).map(line => {
       if (line.startsWith('## ')) {
         return {
@@ -148,6 +166,14 @@ async function addToNotion(content) {
           type: 'heading_3',
           heading_3: {
             rich_text: [{ type: 'text', text: { content: line.replace('### ', '') } }]
+          }
+        };
+      } else if (line.startsWith('#### ')) {
+        return {
+          object: 'block',
+          type: 'heading_3',
+          heading_3: {
+            rich_text: [{ type: 'text', text: { content: line.replace('#### ', '') } }]
           }
         };
       } else if (line.startsWith('- ')) {
@@ -167,46 +193,48 @@ async function addToNotion(content) {
           }
         };
       }
-    }).filter(block => block); // undefined 블록 제거
+    }).filter(block => block);
 
+    // 3. 새 페이지에 콘텐츠 추가
     await notion.blocks.children.append({
-      block_id: pageId,
+      block_id: newPage.id,
       children: blocks
     });
     
-    console.log('✅ Notion 페이지에 성공적으로 추가되었습니다!');
+    console.log(`✅ 새 서브페이지에 콘텐츠 추가 완료: ${pageTitle}`);
   } catch (error) {
     console.error('Notion 업데이트 오류:', error.message);
+    console.error('에러 상세:', error);
   }
 }
 
 async function main() {
   console.log('🚀 일일 뉴스 수집을 시작합니다...');
   
-  // 1. 전문 카테고리별 뉴스 검색
+  // 1. 전문 카테고리별 뉴스 검색 (토큰 절약을 위해 4개씩 수집)
   console.log('🔬 반도체 산업 뉴스 검색 중...');
-  const semiconductorNews = await searchSemiconductorNews(8);
+  const semiconductorNews = await searchSemiconductorNews(4);
   
   console.log('🤖 AI/알고리즘 동향 뉴스 검색 중...');
-  const aiNews = await searchAINews(8);
+  const aiNews = await searchAINews(4);
   
   console.log('💰 스타트업/투자 뉴스 검색 중...');
-  const startupNews = await searchStartupInvestmentNews(8);
+  const startupNews = await searchStartupInvestmentNews(4);
   
   const allNews = [...semiconductorNews, ...aiNews, ...startupNews];
-  console.log(`📊 총 ${allNews.length}개의 뉴스를 수집했습니다.`);
+  console.log(`📊 총 ${allNews.length}개의 뉴스를 수집했습니다. (토큰 절약 모드)`);
   
   if (allNews.length === 0) {
     console.log('❌ 수집된 뉴스가 없습니다.');
     return;
   }
   
-  // 2. Claude로 전문 카테고리별 요약
+  // 2. Claude로 전문 카테고리별 요약 (간결한 프롬프트)
   console.log('🤖 Claude가 전문 뉴스를 분석하고 요약 중...');
   const summary = await summarizeWithClaude(allNews);
   
-  // 3. Notion에 추가
-  console.log('📝 Notion 페이지에 추가 중...');
+  // 3. Notion에 새 서브페이지 생성 후 추가
+  console.log('📝 Notion에 새 서브페이지 생성 및 추가 중...');
   await addToNotion(summary);
   
   console.log('✨ 모든 작업이 완료되었습니다!');
